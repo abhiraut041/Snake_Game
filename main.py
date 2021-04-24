@@ -1,6 +1,7 @@
 import pygame
 import time
 import random
+from playsound import playsound
 from pygame.locals import *
 
 class Constants:
@@ -17,7 +18,7 @@ class Constants:
     CELL_SIZE = SNAKE_SIZE + SNAKE_MID_DIST
     SNAKE_SPEED = 2
     # Playground Dimensions based on Snake/Food Dimensions
-    WIDHT_FACTOR = 17
+    WIDHT_FACTOR = 25
     HEIGHT_FACTOR = 35
     WIDTH = CELL_SIZE * WIDHT_FACTOR
     HEIGHT = CELL_SIZE * HEIGHT_FACTOR
@@ -36,13 +37,15 @@ class Constants:
 class Game:
     def __init__(self):
         pygame.init()
+        pygame.mixer.init()
         self.playground = pygame.display.set_mode((Constants.WIDTH, Constants.HEIGHT))
+        pygame.display.set_caption("Snake Game - by AbhiR")
         self.initialze_game()
     
     def initialze_game(self):
         self.playground.fill(Constants.BLACK)
         # init Snake, Food and Wall Objects
-        self.snake = Snake(self.playground)
+        self.snake = Snake(self.playground, 1)
         self.food = Food(self.playground, self.snake)
         self.wall = Wall(self.playground)
         # placing objects on playground
@@ -80,6 +83,16 @@ class Game:
     def reset_game(self):
         print('Starting New Game => \n')
         self.initialze_game()
+
+    def play_sound(self, name):
+        try:
+            if name == 'food':
+                sound = pygame.mixer.Sound("./resources/ding.ogg")
+            elif name == 'crash':
+                sound = pygame.mixer.Sound("./resources/crash.ogg")
+            pygame.mixer.Sound.play(sound)
+        except Exception as e:
+            print('Cannot Play Music..')
 
     def start(self):
         running = True
@@ -124,6 +137,7 @@ class Game:
                 if not paused:
                     self.play()
             except Exception as e:
+                print(e)
                 self.display_game_over()
                 game_over = True
                 paused = True
@@ -139,14 +153,17 @@ class Game:
         pygame.display.flip()
         # Check if food can be eaten : Food Collision
         if self.is_colloision(self.snake.X[0], self.snake.Y[0], self.food.X, self.food.Y):
-            # add food at new location
+            # add food at new location and increase snake length
             self.food.change_location()
-            # increase length of the Snake
             self.snake.increase_length()
-        
+            # adding music
+            self.play_sound('food')
+
         # Check for self-colloision
         for i in range(2, self.snake.LENGTH):
             if self.is_colloision(self.snake.X[0], self.snake.Y[0], self.snake.X[i], self.snake.Y[i]):
+                # adding music and rasing Excetion
+                self.play_sound('crash')
                 raise "Game Over"
 
 class Snake:
