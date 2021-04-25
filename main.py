@@ -12,18 +12,20 @@ class Constants:
     GREEN = (0, 255, 0)
     ORANGE = (255, 165, 0)
     GRAY = (200, 200, 200)
+    SNAKE_SPEED_SECONDS = 0.15
     # Food and Snake Dimension
     SNAKE_SIZE = FOOD_SIZE = WALL_UNIT_SIZE = 15
     SNAKE_MID_DIST = FOOD_MID_DIST = 3
     CELL_SIZE = SNAKE_SIZE + SNAKE_MID_DIST
     SNAKE_SPEED = 2
     # Playground Dimensions based on Snake/Food Dimensions
-    WIDHT_FACTOR = 25
-    HEIGHT_FACTOR = 35
+    WIDHT_FACTOR = 20
+    HEIGHT_FACTOR = 30
     WIDTH = CELL_SIZE * WIDHT_FACTOR
     HEIGHT = CELL_SIZE * HEIGHT_FACTOR
     # Last three rows will be used to display Game-info
     SNAKE_GROUND_FACTOR = HEIGHT_FACTOR-3
+    TOTAL_PLAYGROUND_CELLS = (WIDHT_FACTOR - 2)*(SNAKE_GROUND_FACTOR-2)
     # Scoreboard Coordinates
     SCOREBOARD_X = 1.5 * CELL_SIZE
     SCOREBOARD_Y = (HEIGHT_FACTOR - 3)*CELL_SIZE
@@ -34,7 +36,7 @@ class Constants:
                 Press Q to Quit \n \
         Enjoy..!\n'
 
-class Game:
+class Game(Exception):
     def __init__(self):
         pygame.init()
         pygame.mixer.init()
@@ -62,6 +64,17 @@ class Game:
                 # Snake can eat food => Colloision Detected
                 return True
         return False
+
+    def check_wall_colloision(self, snake_x, snake_y):
+        # top/left wall
+        if snake_y < Constants.CELL_SIZE or snake_x < Constants.CELL_SIZE:
+            return True
+        # right wall
+        if snake_x >= (Constants.WIDHT_FACTOR-1) * Constants.CELL_SIZE:
+            return True
+        # bottom wall
+        if snake_y >= (Constants.SNAKE_GROUND_FACTOR-1) * Constants.CELL_SIZE:
+            return True
 
     def display_scoreboard(self):
         # Score will be (length of snake - 1)
@@ -138,11 +151,12 @@ class Game:
                     self.play()
             except Exception as e:
                 print(e)
+                self.play_sound('crash')
                 self.display_game_over()
                 game_over = True
                 paused = True
 
-            time.sleep(0.25)
+            time.sleep(Constants.SNAKE_SPEED_SECONDS)
     
     def play(self):
         self.playground.fill(Constants.BLACK)
@@ -154,17 +168,19 @@ class Game:
         # Check if food can be eaten : Food Collision
         if self.is_colloision(self.snake.X[0], self.snake.Y[0], self.food.X, self.food.Y):
             # add food at new location and increase snake length
-            self.food.change_location()
             self.snake.increase_length()
+            self.food.change_location()
             # adding music
             self.play_sound('food')
 
         # Check for self-colloision
         for i in range(2, self.snake.LENGTH):
             if self.is_colloision(self.snake.X[0], self.snake.Y[0], self.snake.X[i], self.snake.Y[i]):
-                # adding music and rasing Excetion
-                self.play_sound('crash')
-                raise "Game Over"
+                raise Exception("Game Over : Self Colloision")
+        
+        # Check for Wall Colloision
+        if self.check_wall_colloision(self.snake.X[0], self.snake.Y[0]):
+            raise Exception("Game Over : Wall Colloision")
 
 class Snake:
     def __init__(self, parent_playground, LENGTH=15):
@@ -228,6 +244,11 @@ class Food:
         pygame.draw.circle(self.parent_playground, Constants.ORANGE, (self.X+Constants.FOOD_SIZE/2, self.Y+Constants.FOOD_SIZE/2), Constants.FOOD_SIZE/2)
     
     def change_location(self):
+        #  Check if playground is full
+        if self.snake.LENGTH == Constants.TOTAL_PLAYGROUND_CELLS:
+            print('Congrats.. You win..!')
+            raise Exception("Game Over : You Win..!")
+        # if playground has space then place food
         self.X, self.Y = self.get_valid_location()
     
     def get_valid_location(self):
