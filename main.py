@@ -56,6 +56,8 @@ class Game(Exception):
         self.wall.draw()
         # Display Welcome msg
         print(Constants.WELCOME_MSG)
+        # Start BG Music
+        self.play_background_music()
 
     def is_colloision(self, snake_x, snake_y, food_x, food_y):
         c = Constants.CELL_SIZE
@@ -92,6 +94,8 @@ class Game(Exception):
         self.playground.blit(msg1, (Constants.CELL_SIZE, Constants.CELL_SIZE * Constants.SNAKE_GROUND_FACTOR/2))
         self.playground.blit(msg2, (Constants.CELL_SIZE, Constants.CELL_SIZE*(1.5 + Constants.SNAKE_GROUND_FACTOR/2 )))
         pygame.display.flip()
+        # Stopping BG Music
+        pygame.mixer.music.stop()
     
     def reset_game(self):
         print('Starting New Game => \n')
@@ -106,6 +110,13 @@ class Game(Exception):
             pygame.mixer.Sound.play(sound)
         except Exception as e:
             print('Cannot Play Music..')
+
+    def play_background_music(self):
+        try:
+            pygame.mixer.music.load("./resources/bg_music.ogg")
+            pygame.mixer.music.play()
+        except Exception as e:
+            print('Cannot play BG Music..')
 
     def start(self):
         running = True
